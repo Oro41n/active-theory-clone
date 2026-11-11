@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Active Theory 镜像 · 显卡兼容性自检</title>
+<style>
+  :root{--bg:#05070b;--ink:#e8eef8;--dim:#8894a8;--ok:#5be0a0;--warn:#ffb454;--bad:#ff6b7a;--line:rgba(255,255,255,.12)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;padding:48px 22px;min-height:100vh}
+  .wrap{max-width:760px;margin:0 auto}
+  h1{font-size:clamp(24px,4vw,38px);font-weight:650;letter-spacing:-.02em;margin:0 0 6px}
+  .sub{color:var(--dim);margin:0 0 34px;font-size:14px}
+  .verdict{border:1px solid var(--line);border-radius:14px;padding:26px 26px 22px;margin-bottom:26px;background:linear-gradient(160deg,rgba(255,255,255,.04),transparent)}
+  .verdict .tag{display:inline-block;font-size:12px;letter-spacing:.14em;text-transform:uppercase;padding:5px 11px;border-radius:99px;border:1px solid currentColor;margin-bottom:14px}
+  .v-ok{color:var(--ok)} .v-warn{color:var(--warn)} .v-bad{color:var(--bad)}
+  .verdict h2{margin:0 0 8px;font-size:22px}
+  .verdict p{margin:0;color:#c4cede;font-size:15px}
+  .rows{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:26px}
+  .row{display:grid;grid-template-columns:minmax(150px,220px) 1fr;gap:18px;align-items:start;padding:15px 20px;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .k{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .k small{display:block;color:var(--dim);font-size:12px;margin-top:2px;white-space:normal}
+  .row .v{font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;text-align:left;word-break:break-word;color:#b9c6da}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:8px;vertical-align:1px}
+  .d-ok{background:var(--ok);box-shadow:0 0 10px var(--ok)} .d-bad{background:var(--bad)} .d-warn{background:var(--warn)}
+  code{background:rgba(255,255,255,.07);padding:2px 7px;border-radius:5px;font-size:13px}
+  .steps{border:1px solid var(--line);border-radius:14px;padding:22px 26px}
+  .steps h3{margin:0 0 12px;font-size:15px;letter-spacing:.04em;text-transform:uppercase;color:var(--dim)}
+  .steps ol{margin:0;padding-left:20px} .steps li{margin:9px 0;font-size:15px}
+  .foot{margin-top:26px;color:var(--dim);font-size:12px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>显卡兼容性自检</h1>
+  <p class="sub">Active Theory 逐字节镜像 · 判断你的机器能否运行原版 Hydra 引擎</p>
+
+  <div class="verdict" id="verdict">
+    <span class="tag">检测中…</span>
+    <h2>正在读取 WebGL 能力</h2>
+    <p>稍候，正在创建 WebGL2 上下文并查询浮点渲染目标支持。</p>
+  </div>
+
+  <div class="rows" id="rows"></div>
+
+  <div class="steps">
+    <h3>如果上面显示「可以运行」</h3>
+    <ol>
+      <li>确保已运行过 <code>python tools/build.py</code>（下载约 180 MB 真实资产）</li>
+      <li>运行 <code>python tools/serve.py</code>，打开 <code>http://127.0.0.1:8080</code></li>
+      <li>Windows 用户也可直接双击 <code>start.bat</code>（macOS/Linux 用 <code>./start.sh</code>）</li>
+    </ol>
+  </div>
+
+  <p class="foot" id="foot">
+    说明：原版引擎需要 WebGL2 或 GPU 实例化扩展，且其 Antimatter 粒子系统依赖浮点纹理
+    (<code>OES_texture_float</code> / <code>EXT_color_buffer_float</code>)。软件渲染器（SwiftShader / llvmpipe）
+    能显示加载过场，但无法进入 3D 场景——这是原站自身的限制，非镜像缺陷。
+  </p>
+</div>
+
+<script>
+(function(){
+  var rows=[], ok=true, warn=false;
+  function add(k,sub,v,state){ rows.push({k:k,sub:sub,v:v,state:state}); }
+  var dot={ok:'<span class="dot d-ok"></span>',bad:'<span class="dot d-bad"></span>',warn:'<span class="dot d-warn"></span>'};
+
+  var c=document.createElement('canvas');
+  var gl2=null,gl1=null;
+  try{ gl2=c.getContext('webgl2'); }catch(e){}
+  try{ gl1=c.getContext('webgl')||c.getContext('experimental-webgl'); }catch(e){}
+  var gl=gl2||gl1;
+
+  add('WebGL 上下文','引擎渲染的基础',
+      gl?(gl2?'WebGL 2.0':'WebGL 1.0'):'不可用', gl?'ok':'bad');
+  if(gl2) add('WebGL2','原站优先使用','支持 · 可走 GPU 实例化 / 更低 CPU','ok');
+  else add('WebGL2','原站优先使用','不支持 · 需依赖实例化扩展','warn');
+
+  var dbg=gl&&gl.getExtension('WEBGL_debug_renderer_info');
+  var renderer=dbg?gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL):(gl?gl.getParameter(gl.RENDERER):'n/a');
+  var vendor=dbg?gl.getParameter(dbg.UNMASKED_VENDOR_WEBGL):(gl?gl.getParameter(gl.VENDOR):'n/a');
+  var soft=/swiftshader|llvmpipe|software|microsoft basic|mesa offscreen/i.test(renderer);
+  add('GPU 渲染器','是否为硬件加速',(vendor+' · '+renderer), soft?'bad':'ok');
+
+  var inst = gl ? (gl2 || !!gl.getExtension('ANGLE_instanced_arrays') || /instance/i.test((gl.getSupportedExtensions()||[]).join(' '))) : false;
+  add('GPU 实例化','WebGL 闸门要求',inst?'支持':'不支持',inst?'ok':'bad');
+
+  var floatOk = gl2 ? !!gl.getExtension('EXT_color_buffer_float') : !!(gl&&(gl.getExtension('OES_texture_float')||gl.getExtension('WEBGL_color_buffer_float')));
+  add('浮点渲染目标','Antimatter 粒子系统必需',floatOk?'支持':'不支持',floatOk?'ok':'bad');
+
+  var ktx = gl ? gl.getExtension('KTX2_compressed_texture') || gl.getExtension('WEBGL_compressed_texture_astc') || gl.getExtension('WEBGL_compressed_texture_s3tc') : null;
+  add('压缩纹理','KTX2 / ASTC / DXT',ktx?'支持（至少一种）':'无硬件压缩纹理',ktx?'ok':'warn');
+
+  // verdict logic
+  var canRun = !!(gl && inst && floatOk && !soft);
+  var softOnly = !!soft;
+  var v=document.getElementById('verdict');
+  if(canRun){
+    v.innerHTML='<span class="tag v-ok">可以运行</span><h2>你的显卡可以运行原版引擎</h2>'+
+      '<p>WebGL2 + 浮点渲染目标 + 硬件加速齐备。按下面步骤启动镜像，效果与原站一致。</p>';
+  }else if(softOnly){
+    v.innerHTML='<span class="tag v-bad">仅软件渲染</span><h2>当前是无 GPU 的软件渲染环境</h2>'+
+      '<p>能显示真实的能量核心加载过场，但无法解码 HDR 贴图 / 运行浮点粒子，进不了 3D 场景。'+
+      '这是原站自身的限制。请改用根目录的手写近似演示，或在有独显的机器上运行本镜像。</p>';
+  }else{
+    v.innerHTML='<span class="tag v-warn">可能受限</span><h2>WebGL 能力不完整</h2>'+
+      '<p>缺少实例化或浮点渲染目标，原版粒子系统可能无法初始化。建议更新显卡驱动或换用支持 WebGL2 的浏览器。</p>';
+  }
+
+  var html=rows.map(function(r){
+    return '<div class="row"><div class="k">'+dot[r.state]+r.k+'<small>'+r.sub+'</small></div>'+
+           '<div class="v">'+r.v+'</div></div>';
+  }).join('');
+  document.getElementById('rows').innerHTML=html;
+})();
+</script>
+</body>
+</html>

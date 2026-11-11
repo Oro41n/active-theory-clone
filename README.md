@@ -35,32 +35,42 @@
 
 ## 本地运行
 
-**想要一模一样(推荐,需真显卡):**
+**想要一模一样(推荐,需真显卡)——双击启动即可:**
+- Windows: 双击 `real-mirror/start.bat`
+- macOS / Linux: `cd real-mirror && ./start.sh`
+
+脚本会自动下载资产(仅首次)、先打开 `check-gpu.html` 自检、再启动服务。**先跑自检页**确认显卡能力。
+
+或手动:
 ```bash
 cd real-mirror
 python tools/build.py     # 首次下载 ~180MB 真实资产(幂等,可中断续跑)
-python tools/serve.py     # 打开 http://127.0.0.1:8080
+python tools/serve.py     # 打开 http://127.0.0.1:8080/check-gpu.html 自检
 ```
-`build.py` 会抓取原始 `app.js`、场景数据、几何、贴图(含 `.ktx2`)、Basis/Draco 解码器、worker 与 CMS,并生成带最小兼容 shim 的 `index.html`。引擎本身**零改动**。
+`build.py` 会抓取原始 `app.js`、场景数据、几何、贴图(含 `.ktx2`)、Basis/Draco 解码器、worker、CMS 与 BMFont 字体数据,镜像 worker 路径(硬链接,0 额外空间),并生成带最小兼容 shim 的 `index.html`。引擎本身**零改动**。
 
 **只要能跑的演示(无 GPU 也能看):**
 ```bash
 python -m http.server 8080   # 根目录,打开 http://localhost:8080
 ```
 
+### Hydra 是开源的吗?
+
+**不是。** Active Theory 的 Hydra 是内部自研的专有引擎(见其 Medium 文章《The Story of Technology Built at Active Theory》),官方 GitHub 组织只开源了小工具(`split-text`、`fit-text`、`activeframe`、`GaussianSplats3D`…),**没有 Hydra**。网上其他叫 "Hydra" 的开源项目(`hydra-synth` VJ 工具、`facebookresearch/hydra` 配置框架、`HydraJS`)都与它无关。所以「直接用 Hydra」= 用它**编译后的生产 bundle**,这正是 `real-mirror/` 逐字节做的事——你无法 `npm install` 或拿到它的源码。
+
 ## 结构
 
 ```
 real-mirror/               逐字节镜像(需真显卡)
-  tools/build.py           一键重建脚本(下载真实资产 + 注入 shim)
+  start.bat / start.sh     一键启动(建库 + 自检 + 服务)
+  check-gpu.html           显卡兼容性自检(WebGL2/浮点/软渲染判定)
+  tools/build.py           一键重建脚本(下载真实资产 + worker 硬链接 + 注入 shim)
   tools/serve.py           带 KTX2/wasm MIME 的本地服务器
   index.src.html           原站未改动的引导 HTML
   README.md                镜像说明与 GPU 限制
-  site/                    构建产物(gitignore,~180MB,本地生成)
+  site/                    构建产物(gitignore,~181MB,本地生成;含 worker 硬链接副本)
 index.html                 根目录手写演示入口(无 GPU 可用)
-
-```
-index.html                 单屏骨架（两个 canvas + 药丸 + 场景层 + 菜单）
+assets/css/style.css       锁定视口、场景层、药丸、菜单、响应式、无障碍
 assets/css/style.css       锁定视口、场景层、药丸、菜单、响应式、无障碍
 assets/js/portal.js        2D 能量核心过场 + 边缘能量管
 assets/js/shaderfield.js   WebGL 舞台（玻璃板 + 轨道环 + fbm 粒子，uProgress 推相机）

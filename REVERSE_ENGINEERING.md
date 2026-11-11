@@ -143,3 +143,20 @@ y = sin(asin(cos(a+t·85e-5)))·(150·sin(a+t·75e-5)) · 1.75cos(a+t·65e-5) ·
 → 引擎在加载页之后无法继续装配场景图。**真站在本沙箱同样打不开**（早期 `/unsupported` 就是它自己的拒绝逻辑）。这是环境限制，不是镜像缺陷。
 
 **结论**：`real-mirror/` 在有真显卡的机器 = 原站逐字节复现（一模一样）；根目录手写版 = 任何环境可运行的近似演示。二者都交付，用户按硬件选择。
+
+## 8. 拷贝即用化 + 沙箱取证补充（2026-11-11 续）
+
+用户："直接用 Hydra 的行了，应该是开源的吧" → **查证结论：Hydra 不开源**。Active Theory 官方 GitHub 组织 `activetheory` 11 个公开仓库全是小工具（`split-text`/`fit-text`/`activeframe`/`GaussianSplats3D`…），无 Hydra；官方 Medium 原文称其为 "a 3D engine built in-house"。网上同名开源项目（`hydra-synth` VJ 合成器、`facebookresearch/hydra` 配置框架、`HydraJS`、`hydraterm`）均无关。第三方 `DDW-X/activetheory.net` 号称 1:1 重建，实为分析文档（License `NOASSERTION`、明确非商用、demo 已 502、5 star），不能用。故「直接用 Hydra」= 用其**编译后生产 bundle**，`real-mirror/` 已逐字节做到（`app.js` SHA-256 `085d3e6a…`）。
+
+### 8.1 交付强化
+- `real-mirror/start.bat`（Win）/ `start.sh`（macOS/Linux）：一键「建库 + 自检 + 起服务」。
+- `real-mirror/check-gpu.html`：**显卡兼容性自检**——检测 WebGL2、硬件 vs 软件渲染器、GPU 实例化、浮点渲染目标(`EXT_color_buffer_float`/`OES_texture_float`)、压缩纹理；据此判定能否跑原版引擎。实测：带真实 GPU 的 Edge 显示「可以运行」，SwiftShader 环境显示「仅软件渲染」。`build.py` 会把它复制进 `site/`。
+- 拷贝即用包：`site/`（~181 MB / 371 文件，gitignored）；`build.py` 幂等、缺啥补啥、失败 0。
+
+### 8.2 修复的三个真实缺陷（重建与真显卡稳定性）
+1. **worker 路径副本**（关键）：Hydra 的解码 worker 以自身目录 `assets/js/hydra/` 为基准解析 `assets/images/...`。原 `build.py` 缺此副本 → "Image not found"。`ensure_worker_paths()` 用 **os.link 硬链接**把 images/geometry 镜像到 worker 目录（347 链接、~0 额外磁盘、tar 打包仍认），真显卡上无害。早期诊断即靠这一步把异常从 88→3。
+2. **BMFont 字体数据**：引擎在 WebGL 里用 `NBArchitektStd-Regular.json`（BMFont `pages`/`chars`/`kernings`）+ 同名 `.png` 字形图集画字，不只靠 woff2。原脚本探测路径写成 `*-export/` 子目录（返回 HTML fallback），正确路径是**平铺** `assets/fonts/NBArchitektStd-{Regular,Light,Bold}.{json,png}`。补齐后沙箱 `rej` 从 3（2×字体 JSON 404 + 1×audio）降到 0。
+3. **audio 解码保护**：headless/软件 VM 无音频设备，`Audio3D.play` 的 `EncodingError: Unable to decode audio data` 会中断 intro-ready 链。shim 在 `spoofed` 时吞掉该类 `unhandledrejection`（真显卡 no-op）。
+
+### 8.3 沙箱最终取证（软件渲染的确切天花板）
+最强配置（分类占位贴图 CDP 拦截 + 全字体 + worker 副本 + audio 保护）下：引擎 `rej=0`、canvas 建立、Stage 子元素 5→8、能量核心从 `/9`→`/45`→`/60` 逐帧充能（斜线穹顶 + 蓝色电弧触须 + 两侧对称弧，截图已取证），强制 wheel/click 也无法推进到 3D 场景。**确证**：SwiftShader 缺浮点渲染目标，`AntimatterAttribute` GPGPU 粒子系统无法初始化，场景图 ready promise 永不 resolve。这是环境硬上限，非镜像缺陷——真站本身在本沙箱同样打不开。真显卡上 `real-mirror/` = 原站逐字节复现。

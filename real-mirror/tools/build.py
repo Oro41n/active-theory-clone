@@ -70,7 +70,7 @@ def balanced_array(s, start):
 
 def main():
     os.makedirs(SITE, exist_ok=True)
-    print('[1/5] core bundle + data')
+    print('[1/6] core bundle + data')
     core = {
         f'assets/js/app.{CACHE}.js': f'{ORIGIN}/assets/js/app.{CACHE}.js',
         f'assets/js/modules.{CACHE}.js': f'{ORIGIN}/assets/js/modules.{CACHE}.js',
@@ -87,16 +87,19 @@ def main():
         'assets/data/metadata-dev.json': f'{GCS}/cms/metadata-dev.json',
         'assets/data/contact-dev.json': f'{GCS}/cms/contact-dev.json',
     }
-    for f in ['NBArchitektStd-Regular-export/NBArchitektStd-Regular.woff2',
-              'NBArchitektStd-Light-export/NBArchitektStd-Light.woff2',
-              'NBArchitektStd-Bold-export/NBArchitektStd-Bold.woff2']:
-        core['assets/fonts/' + f.split('/')[-1]] = ORIGIN + '/assets/fonts/' + f
+    # Web fonts AND Hydra's BMFont data (JSON metrics + PNG glyph atlas) — the
+    # engine draws text in WebGL using these, not only the woff2 files.
+    for weight in ('Regular', 'Light', 'Bold'):
+        stem = 'NBArchitektStd-' + weight
+        core['assets/fonts/' + stem + '.woff2'] = ORIGIN + '/assets/fonts/' + stem + '-export/' + stem + '.woff2'
+        core['assets/fonts/' + stem + '.json'] = ORIGIN + '/assets/fonts/' + stem + '.json'
+        core['assets/fonts/' + stem + '.png'] = ORIGIN + '/assets/fonts/' + stem + '.png'
     for f in ['apple-touch-icon.png', 'favicon-32x32.png', 'favicon-16x16.png', 'manifest.json']:
         core['assets/meta/' + f] = ORIGIN + '/assets/meta/' + f
     for rel, url in core.items():
         get(url, os.path.join(SITE, rel))
 
-    print('[2/5] parse embedded asset manifests')
+    print('[2/6] parse embedded asset manifests')
     bundle = open(os.path.join(SITE, f'assets/js/app.{CACHE}.js'), encoding='utf-8').read()
     geo = tex = []
     for name in ['window.UIL_ASSETS_GEOMETRIES', 'window.UIL_ASSETS_TEXTURES']:
@@ -111,7 +114,7 @@ def main():
             tex = pairs
     print(f'       {len(geo)} geometry, {len(tex)} textures')
 
-    print('[3/5] geometry + textures (this is the bulk, ~175 MB)')
+    print('[3/6] geometry + textures (this is the bulk, ~175 MB)')
     tasks = [(f'{ORIGIN}/assets/geometry/{f}', os.path.join(SITE, 'assets/geometry', f)) for f, _ in geo]
     tasks += [(f'{ORIGIN}/assets/images/{f}', os.path.join(SITE, 'assets/images', f)) for f, _ in tex]
     tasks += [(f'{ORIGIN}/assets/images/{f.rsplit(".", 1)[0]}.ktx2',
@@ -126,12 +129,51 @@ def main():
             time.sleep(0.05)
     print('       ', counts, '(404 = optional .ktx2 variants the origin does not ship)')
 
-    print('[4/5] write index.html with compatibility shim')
+    print('[4/6] mirror assets into the worker directory (Hydra resolves relative paths there)')
+    ensure_worker_paths()
+
+    print('[5/6] write index.html with compatibility shim + GPU self-check page')
     write_index(os.path.join(ROOT, 'index.src.html'), os.path.join(SITE, 'index.html'))
+    for extra in ('check-gpu.html',):
+        src = os.path.join(ROOT, extra)
+        if os.path.exists(src):
+            shutil.copy2(src, os.path.join(SITE, extra))
 
     total = sum(os.path.getsize(os.path.join(dp, f)) for dp, _, fs in os.walk(SITE) for f in fs)
-    print(f'[5/5] done. {total/1024/1024:.1f} MB in {SITE}')
+    print(f'[6/6] done. {total/1024/1024:.1f} MB in {SITE}')
     print('      run:  python tools/serve.py   then open http://127.0.0.1:8080')
+
+
+def ensure_worker_paths():
+    """Hydra's decode worker resolves `assets/images/...` relative to its own
+    script directory (assets/js/hydra/), not the page root. On the origin this
+    is masked by absolutePath(); with the software shim (or if absolutePath is
+    ever bypassed) the worker 404s with 'Image not found'. Mirror the same tree
+    under the worker dir. Use hard links when possible so it costs ~0 extra
+    disk, and skip re-linking on repeated builds.
+    """
+    src_root = os.path.join(SITE, 'assets')
+    dst_root = os.path.join(src_root, 'js', 'hydra', 'assets')
+    linked = 0
+    for sub in ('images', 'geometry'):
+        sdir = os.path.join(src_root, sub)
+        if not os.path.isdir(sdir):
+            continue
+        for dp, _, fs in os.walk(sdir):
+            rel = os.path.relpath(dp, sdir)
+            out = os.path.join(dst_root, sub, rel)
+            os.makedirs(out, exist_ok=True)
+            for f in fs:
+                s = os.path.join(dp, f)
+                d = os.path.join(out, f)
+                if os.path.exists(d):
+                    continue
+                try:
+                    os.link(s, d)          # hard link: no extra bytes on disk
+                except OSError:
+                    shutil.copy2(s, d)      # fallback if linking unsupported
+                linked += 1
+    print(f'       worker asset paths mirrored ({linked} new links; ~0 extra MB)')
 
 
 def write_index(src, dst):
@@ -176,6 +218,12 @@ def write_index(src, dst):
     return of.apply(this,arguments);
   };
   try{window.localStorage.setItem('cookies_accepted','1');}catch(e){}
+  // Headless/software VMs have no audio device; a rejected audio decode can
+  // abort the intro-ready chain. Swallow it so the scene can still advance.
+  if(spoofed)window.addEventListener('unhandledrejection',function(e){
+    var r=e.reason||{};var m=String(r.message||r.name||r||'');
+    if(/decode audio|EncodingError|AudioContext|audio data/i.test(m))e.preventDefault();
+  });
 })();
 </script>
 '''

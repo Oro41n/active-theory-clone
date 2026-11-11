@@ -6,15 +6,45 @@ The original Hydra bundle, scene data, geometry (`.bin`/`.json`), textures (+ `.
 modified**; SHA-256 of `app.1780406240914.js` matches the live site exactly
 (`085d3e6a46893f503262ccdaaad16f832367e709bae7ae14c369b629fdb1a5cf`).
 
-## Run (needs a real GPU)
+## Quick start
+
+**Easiest — double-click a launcher:**
+- Windows: `start.bat`
+- macOS / Linux: `./start.sh`
+
+It builds `site/` on first run (downloads ~180 MB once), opens `check-gpu.html` to test your
+hardware, then starts the server at `http://127.0.0.1:8080`.
+
+**Or run manually:**
 
 ```bash
-python tools/build.py        # downloads ~180 MB once; builds site/
-python tools/serve.py        # http://127.0.0.1:8080
+python tools/build.py        # downloads ~180 MB once; builds site/ (idempotent)
+python tools/serve.py        # http://127.0.0.1:8080  — open check-gpu.html first
 ```
 
-On a normal machine with hardware WebGL this renders identically to the live site — same engine,
-same bytes, same assets. `tools/build.py` is idempotent (skips files already downloaded).
+Open **`http://127.0.0.1:8080/check-gpu.html`** first: it reports WebGL2, hardware vs software
+renderer, GPU instancing and float render targets, and tells you whether your machine can run the
+original engine. On a normal machine with hardware WebGL, `http://127.0.0.1:8080/` renders
+identically to the live site — same engine, same bytes, same assets.
+
+If you are on a fresh clone without `site/`, a launcher or `build.py` creates it; `site/` itself is
+git-ignored (the ~180 MB of third-party assets are never committed).
+
+## Is Hydra open source?
+
+No. Active Theory's Hydra is an **in-house, proprietary engine** (see their Medium article
+"The Story of Technology Built at Active Theory"). Their public GitHub org ships only small tools
+(`split-text`, `fit-text`, `activeframe`, `GaussianSplats3D`, …), **not** Hydra. Open-source projects
+also named "Hydra" (`hydra-synth` VJ tool, `facebookresearch/hydra` config framework, `HydraJS`)
+are unrelated. So "just use Hydra" means using its **compiled production bundle** — which is exactly
+what this mirror does, byte-for-byte. You cannot `npm install` Hydra or get its source.
+
+## Worker asset paths
+
+Hydra's decode worker resolves `assets/images/...` relative to its own script directory
+(`assets/js/hydra/`), not the page root. `build.py` mirrors the images/geometry trees there via
+**hard links** (~0 extra disk) so the worker never 404s with "Image not found". This matters on
+software rendering and is harmless on a real GPU.
 
 ## The small shim (index.html)
 
