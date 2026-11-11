@@ -44,12 +44,53 @@
 - **Contact**：hello@activetheory.net、Newsletter、Privacy、Instagram、LinkedIn、X。
 - **About 文案**（从 bundle 内 `Tools` 描述提取）：成立于 2012 的创意数字制作工作室，126 项 FWA、24 项 Cannes Lions 等。
 
-## 5. 本复刻的实现取舍
+## 5. 动效逆向（核心）
 
-原站是重型 WebGL 体验（自研引擎 + 烘焙 PBR 场景 + 二进制几何），无法在纯前端逐帧复刻其 3D 场景。本复刻聚焦**结构、内容、视觉语言与交互**的还原：
+动效是这类站点的灵魂。逐项从 bundle 中提取到的**真实参数**，而非凭感觉模仿：
+
+### 5.1 帧率无关插值（engine 原码）
+```js
+Math.lerp = (target, value, alpha, calcHz = true) =>
+  value + (target - value) * (calcHz ? 1 - Math.exp(Math.log(1 - alpha) * FRAME_HZ_MULTIPLIER) : alpha)
+// FRAME_HZ_MULTIPLIER = dt * 60 → 等价 1-(1-alpha)^(dt·60)，60/120/144Hz 手感一致
+```
+复刻的 `damp()` 直接用此式驱动指针、视差层、光标。
+
+### 5.2 相机 wobble（原码移植）
+五层 sin/cos 叠加，频率 `25e-5 / 65e-5 / 75e-5 / 85e-5 / 95e-5`，最后 `× .001 × wobbleStrength`：
+```js
+x = cos(a+t·75e-5)·(a+200·sin(t·95e-5)) · 2sin(a+t·75e-5) · 1.1cos(a+t·75e-5)
+y = sin(asin(cos(a+t·85e-5)))·(150·sin(a+t·75e-5)) · 1.75cos(a+t·65e-5) · 1.15sin(a+t·25e-5)
+```
+复刻把它按 `wobbleStrength`（Home .10 / Work .06 / Detail .05）缩放为 CSS 像素的漂浮。
+
+### 5.3 每场景相机参数（来自 uil.json `CAMERA_*`）
+| 场景 | lerpSpeed | fov | position | lookAt |
+|---|---|---|---|---|
+| Home | 0.10 | 30 / 20 | [0,2,40] | [0,4.59,0] |
+| Work | 0.07 | 35 | [0,0,2] | [0,0,-4] |
+| WorkDetail | 0.07 | — | [0,0,1] | [0,0,-10] |
+| CleanRoom | 0.08 | 30 | [0,1,5] | [0,0.8,-0.3] |
+| home_scene | — | 20 | [0,3,15] | [0,3,0]（wobbleStrength .1）|
+
+### 5.4 缓动曲线（bundle 内 easings.net 表，原样取用）
+`easeOutExpo .190,1,.220,1` · `easeInOutQuart .770,0,.175,1` · `easeOutCirc .075,.820,.165,1` · `easeOutBack .175,.885,.320,1.275` · `easeInOutExpo 1,0,0,1` …
+
+### 5.5 编排与粒子
+- **Theatre.js** 驱动序列（`theatrejs.com` 链接 26 处、keyframe/sequence 大量命中）。
+- 粒子系统为 **Proton / AntimatterPass**（GLSL 位置纹理 + `tLife` decay + `HZ` uniform）+ **curl noise** 流场。
+- 配色计数：白 43 / 青 `#00ffff` 12 / `#1A6DEA` 蓝 5 / 冷辉光 `#9ca5ff` 3 / 极少暖黄 `#ffde0a` 1。
+
+### 5.6 复刻中已落地的动效
+- `assets/js/shaderfield.js`：单三角形全屏片元着色器——域扭曲 fbm「空气」+ **curl noise 粒子**呼吸 + 指针柔光 + 颗粒 + 暗角；0.55–0.7 倍分辨率渲染，零贴图，WebGL 不可用回退 CSS 渐变。
+- `assets/js/app.js`：帧率无关 `damp()`、原码 wobble、`data-depth` 分层视差、词级错峰揭示（`.wd`）、遮罩上推（`.clip`）、路由擦除转场（`.wipe`）、项目 `uiColor` 实时着色氛围、磁吸光标、滚动驱动 shader uniform。
+- 尊重 `prefers-reduced-motion`：关闭擦除/视差/粒子动画，静态兜底。
+
+## 6. 本复刻的实现取舍
+
+原站的 3D 烘焙场景、体积光、UnrealBloom 后期与流体折射依赖其自有引擎与资产，**纯前端无法逐帧等价**。这部分只做“神似”的着色器氛围近似；其余（动效参数、结构、内容、排版、交互）尽量按逆向到的真实值还原。
 
 - 真实字体、真实项目数据、真实项目图（已本地化，63/65 项目有本地图）。
-- 黑底 + 冷色高光 + 网格/Hex 纹理 + 大标题排版，还原 Active Theory 的视觉调性。
+- 黑底 + 冷色高光 + GLSL 粒子场 + 大标题排版。
 - 单页路由：Home / Work / Work Detail / About / Contact，Hash 路由模拟 `Router/state`。
-- 自绘 WebGL/Canvas 粒子与鼠标视差，模拟原站的动态氛围（不依赖自研引擎）。
 - 响应式、无障碍降级（无 WebGL 时用静态渐变背景）。

@@ -36,10 +36,19 @@ assets/img/                项目图 + favicon + OG 图
 REVERSE_ENGINEERING.md     逆向分析报告
 ```
 
-## 特性
+## 动效（按逆向到的真实参数重做）
 
-- 环境粒子场 + 六边形网格视差（Canvas 2D，尊重 `prefers-reduced-motion`）
-- 自定义光标、加载动画、滚动入场、悬停放大等微交互
+动效是本复刻的重点，参数来自对原站 bundle 的逆向（详见 `REVERSE_ENGINEERING.md` 第 5 节）：
+
+- **WebGL 氛围场**：域扭曲 fbm + **curl noise 粒子** + 指针柔光 + 颗粒 + 暗角，单三角形全屏着色器，0.55–0.7 倍分辨率，零贴图（`assets/js/shaderfield.js`）。
+- **帧率无关插值**：`1-(1-α)^(dt·60)`（引擎原式 `1-exp(log(1-α)·dt·60)`），60/120/144Hz 手感一致。
+- **相机 wobble**：原码五层 sin/cos（25e-5…95e-5 × wobbleStrength）移植为界面漂浮。
+- **每场景参数**：Home lerp .10 / Work .07 / Detail .07 / CleanRoom .08；项目详情页按 `uiColor` 实时给氛围场染色。
+- **编排**：词级错峰揭示、遮罩上推、青色细线擦除转场、卡片错峰入场、磁吸光标、滚动视差。
+- 全部尊重 `prefers-reduced-motion`，无 WebGL 时回退静态渐变。
+
+## 其它特性
+
 - 作品按标签（Website / Multiplayer / XR / AI / Game / Installation）筛选
 - 项目详情页含客户 / 年份 / 领域 / 描述 / 前后项目导航
 - 移动端菜单、响应式栅格、无障碍降级
