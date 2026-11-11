@@ -1,24 +1,45 @@
-/* Site content — sourced from the publicly available Active Theory CMS (dev snapshot).
-   Localized for offline study use. */
-window.AT_SITE = {
+/* 41n — 个人作品集内容（示例骨架）
+   这是全站唯一的内容文件：把下面的示例文字、邮箱、社交链接换成你自己的即可，
+   不需要改其它文件。作品卡片数据在 assets/data/projects.json。 */
+window.PORTFOLIO = {
+  brand: "41n",
+
   meta: {
-    title: "Active Theory · Creative Digital Experiences",
-    description: "Founded in 2012. We blend story, art & technology as an in-house team of passionate makers. Our industry-leading web toolset consistently delivers award-winning work through quality & performance."
+    title: "41n — Creative Developer",
+    description: "41n 的个人作品集 · 创意开发、交互设计与数字体验。"
   },
-  about: "Active Theory is a creative digital production studio founded in 2012. We focus on creative tech frameworks that are custom and beautifully crafted in-house. We have won 126 FWA awards, 24 Cannes Lions, 15 CLIO awards, 69 Awwwards, and one Golden Globe. Our capabilities include generative AI, LLM strategy and implementation, experiential, accessibility, WebGL, generative graphics, physical installations, AR/VR/XR, system architecture, and QA.",
-  capabilities: [
-    ["Technology", "Generative AI · LLM strategy · DevOps · Front & back end · WebGL · Generative graphics · AR/VR/XR · System architecture"],
-    ["Creative", "UX & UI · Rapid prototyping · Brand design · Game design · Motion design · Voice interfaces · 3D · Art direction"],
-    ["Strategy", "Brand strategy · Content strategy · Design systems · Digital strategy · Product strategy · QA"]
-  ],
+
+  home: {
+    kicker: "PORTFOLIO · SELECTED WORKS 2022 — 2025",
+    tagline: "我把故事、设计与技术，编织成可以在浏览器里触摸的体验。"
+  },
+
+  about: {
+    kicker: "ABOUT · 关于我",
+    headline: ["你好，我是", "41n", "一名创意开发者。"],
+    lede: "我专注于用代码构建有温度的数字体验——从 WebGL 实时图形、生成艺术，到交互装置与创意工具。这里收录了我近期的一部分实验与作品。（示例文案，替换成你自己的介绍。）",
+    capabilities: [
+      ["创意", "交互设计 · 动效设计 · 艺术指导 · 3D · 视觉叙事"],
+      ["技术", "WebGL / GLSL · 前端架构 · 生成图形 · 实时音频 · AI 实验"],
+      ["方向", "创意开发 · 数字体验 · 装置艺术 · 原型验证"]
+    ],
+    stats: [
+      ["06", "精选作品"],
+      ["04", "年创作"],
+      ["∞", "好奇心"]
+    ]
+  },
+
   contact: {
-    email: "hello@activetheory.net",
+    kicker: "CONTACT · 聊聊",
+    headline: ["有想法？", "一起做点", "有意思的东西。"],
+    email: "hello@41n.dev",
+    note: "示例邮箱 · 替换成你自己的",
     links: [
-      { title: "Instagram", url: "https://www.instagram.com/activetheory" },
-      { title: "LinkedIn", url: "https://www.linkedin.com/company/active-theory/" },
-      { title: "X / Twitter", url: "https://twitter.com/active_theory" },
-      { title: "Newsletter", url: "https://mailchi.mp/activetheory/newsletter" },
-      { title: "Privacy", url: "https://www.notion.so/Active-Theory-Privacy-Notice-dc343e6976e24c5e866be0ee64bf99eb" }
+      { title: "GitHub", url: "https://github.com/Oro41n" },
+      { title: "Instagram", url: "https://instagram.com/" },
+      { title: "X / Twitter", url: "https://x.com/" },
+      { title: "发邮件", url: "mailto:hello@41n.dev" }
     ]
   }
 };

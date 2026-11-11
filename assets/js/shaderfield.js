@@ -1,4 +1,4 @@
-/* Active Theory study rebuild — the full-screen WebGL "Stage".
+/* 41n portfolio — the full-screen WebGL "Stage".
    Reconstructed from captured frames of the real rendered page: a near-black
    volumetric space, a floating beveled glass slab with a cool blue internal
    gradient, two crossed orbital rings arcing beneath it, drifting particles

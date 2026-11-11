@@ -1,14 +1,14 @@
-/* Active Theory — study rebuild · scene engine
-   The real site has NO native scrollbar (documentElement.scrollHeight === vh).
-   Wheel / touch / keys feed a virtual `progress` damped with the engine's
-   frame-rate-independent lerp, then drive: the shader camera push + palette,
-   crossfade + dolly of DOM scene layers, and the pill nav velocity reaction.
-   Scene 0 is the floating glass slab; scrolling pushes the camera through
-   full-bleed work scenes, then About and Contact. */
+/* 41n — personal portfolio · scene engine
+   No native scrollbar (documentElement.scrollHeight === vh). Wheel / touch / keys
+   feed a virtual `progress` damped with a frame-rate-independent lerp, driving
+   the shader camera push + palette, crossfade + dolly of DOM scene layers, and
+   the pill nav velocity reaction. Scene 0 is the floating glass slab; scrolling
+   pushes the camera through work scenes (image or clean placeholder), then
+   About and Contact. All copy comes from assets/js/data.js (window.PORTFOLIO). */
 (function () {
   "use strict";
 
-  var SITE = window.AT_SITE;
+  var SITE = window.PORTFOLIO;
   var PROJECTS = [];
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -45,14 +45,31 @@
   /* ---------- Build scene layers ---------- */
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
+  // Clean geometry placeholder for works that have no image yet. Driven by the
+  // work's own uiColor so every card still reads as a distinct piece.
+  function placeholderMarkup(p, index, total) {
+    var col = "#" + String(p.uiColor || "3aa0ff").replace(/^#/, "");
+    var n = String(index + 1).padStart(2, "0");
+    return '<div class="scene__ph" style="--ph:' + col + '">' +
+      '<div class="ph__grid"></div>' +
+      '<div class="ph__orbit"><span></span><span></span><span></span></div>' +
+      '<div class="ph__num">' + n + '</div>' +
+      '<div class="ph__corner ph__corner--tl"></div><div class="ph__corner ph__corner--tr"></div>' +
+      '<div class="ph__corner ph__corner--bl"></div><div class="ph__corner ph__corner--br"></div>' +
+      '<div class="ph__badge">IMAGE / PLACEHOLDER</div>' +
+      '<div class="ph__count">' + n + ' <i>/</i> ' + String(total).padStart(2, "0") + '</div>' +
+      '</div>';
+  }
+
   function buildScenes() {
-    var picks = [PROJECTS[0], PROJECTS[4], PROJECTS[9], PROJECTS[13]].filter(Boolean);
+    var picks = PROJECTS.filter(Boolean);
     SCENES = [];
+    var home = SITE.home || {};
     SCENES.push({
       kind: "home", palette: ["#05070c", "#3aa0ff", "#1A6DEA"],
       html: '<section class="scene scene--home" data-i="0">' +
-        '<div class="kicker">Creative Digital Experiences · Est. 2012</div>' +
-        '<p class="tagline">We blend story, art &amp; technology as an in-house team of passionate makers.</p></section>'
+        '<div class="kicker">' + esc(home.kicker || "PORTFOLIO") + '</div>' +
+        '<p class="tagline">' + esc(home.tagline || "") + '</p></section>'
     });
     picks.forEach(function (p, i) {
       var tags = (p.tags || "").split(",").map(function (t) { return t.trim(); }).filter(Boolean).join(" · ");
@@ -60,9 +77,11 @@
         kind: "work", slug: p.slug,
         palette: ["#05070c", "#" + String(p.uiColor || "3aa0ff").replace(/^#/, ""), "#1A6DEA"],
         html: '<section class="scene scene--work" data-i="' + (i + 1) + '">' +
-          (p.image ? '<img class="scene__img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '">' : '') +
+          (p.image
+            ? '<img class="scene__img" src="' + esc(p.image) + '" alt="' + esc(p.name) + '">'
+            : placeholderMarkup(p, i, picks.length)) +
           '<div class="scene__info">' +
-            '<div class="scene__num">Project ' + String(i + 1).padStart(2, "0") + ' / ' + String(picks.length).padStart(2, "0") + '</div>' +
+            '<div class="scene__num">Selected Work ' + String(i + 1).padStart(2, "0") + ' / ' + String(picks.length).padStart(2, "0") + '</div>' +
             '<h2 class="scene__title">' + esc(p.name) + '</h2>' +
             '<div class="scene__meta"><span>' + esc(p.client) + '</span><span>' + ((p.date || "").slice(0, 4) || "") + '</span><span>' + esc(tags) + '</span></div>' +
             '<p class="scene__desc">' + esc(p.description || "") + '</p>' +
@@ -70,21 +89,29 @@
           '</div></section>'
       });
     });
+    var about = SITE.about || {};
+    var hl = about.headline || ["", "", ""];
+    var stats = (about.stats || []).map(function (s) {
+      return '<div class="stat"><b>' + esc(s[0]) + '</b><span>' + esc(s[1]) + '</span></div>';
+    }).join("");
     SCENES.push({
       kind: "about", palette: ["#06080e", "#9ca5ff", "#3aa0ff"],
       html: '<section class="scene scene--text" data-i="' + SCENES.length + '">' +
-        '<div class="kicker">About · Studio</div>' +
-        '<h2 class="h2">We blend <em>story</em>, art &amp; technology into experiences that feel impossible — until you try them.</h2>' +
-        '<p class="lede">' + esc(SITE.about) + '</p>' +
-        '<div class="stats"><div class="stat"><b>126</b><span>FWA awards</span></div><div class="stat"><b>24</b><span>Cannes Lions</span></div><div class="stat"><b>69</b><span>Awwwards</span></div><div class="stat"><b>1</b><span>Golden Globe</span></div></div></section>'
+        '<div class="kicker">' + esc(about.kicker || "About") + '</div>' +
+        '<h2 class="h2">' + esc(hl[0]) + ' <em>' + esc(hl[1]) + '</em> ' + esc(hl[2]) + '</h2>' +
+        '<p class="lede">' + esc(typeof about.lede === "string" ? about.lede : "") + '</p>' +
+        (stats ? '<div class="stats">' + stats + '</div>' : '') + '</section>'
     });
+    var contact = SITE.contact || {};
+    var ch = contact.headline || ["", "", ""];
     SCENES.push({
       kind: "contact", palette: ["#04060a", "#00d8ff", "#1A6DEA"],
       html: '<section class="scene scene--text" data-i="' + SCENES.length + '">' +
-        '<div class="kicker">Contact · Say hello</div>' +
-        '<h2 class="contact__big">Let’s make<br>something<br><a href="mailto:' + esc(SITE.contact.email) + '">extraordinary.</a></h2>' +
-        '<div class="contact__links"><a href="mailto:' + esc(SITE.contact.email) + '">' + esc(SITE.contact.email) + '</a>' +
-        SITE.contact.links.map(function (l) { return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + ' ↗</a>'; }).join("") + '</div></section>'
+        '<div class="kicker">' + esc(contact.kicker || "Contact") + '</div>' +
+        '<h2 class="contact__big">' + esc(ch[0]) + '<br>' + esc(ch[1]) + '<br><a href="mailto:' + esc(contact.email) + '">' + esc(ch[2]) + '</a></h2>' +
+        '<div class="contact__links"><a href="mailto:' + esc(contact.email) + '">' + esc(contact.email) + '</a>' +
+        (contact.links || []).map(function (l) { return '<a href="' + esc(l.url) + '" target="_blank" rel="noopener">' + esc(l.title) + ' ↗</a>'; }).join("") + '</div>' +
+        (contact.note ? '<div class="contact__note">' + esc(contact.note) + '</div>' : '') + '</section>'
     });
 
     maxProgress = SCENES.length - 1;
@@ -121,6 +148,8 @@
       el.style.transform = "translate3d(0," + ty.toFixed(1) + "%,0) scale(" + scale.toFixed(3) + ")";
       var img = el.querySelector(".scene__img");
       if (img) img.style.transform = "scale(" + (1.1 + d * 0.05).toFixed(3) + ")";
+      var ph = el.querySelector(".scene__ph");
+      if (ph) ph.style.transform = "scale(" + (1.08 + d * 0.04).toFixed(3) + ")";
       var info = el.querySelector(".scene__info");
       if (info) {
         var io = Math.max(0, 1 - Math.abs(d) * 2.3);

@@ -1,85 +1,78 @@
-# Active Theory — Study Rebuild
+# 41n — Personal Portfolio
 
-对 [activetheory.net](https://activetheory.net) 做逆向分析后的**个人学习用**复刻。仓库里有**两条路径**，按需选:
+个人作品集站点：无原生滚动条的单屏沉浸体验，能量核心过场 → 悬浮玻璃板首页 → 滚轮推进的精选作品（几何占位封面）→ 关于 → 联系。动效语法取自对 Active Theory 的逆向研究，但**全部内容已替换为 41n 自己的**，无一处原文案/原图。
 
-| 路径 | 是什么 | 运行条件 | 相似度 |
-|---|---|---|---|
-| **[`real-mirror/`](./real-mirror/README.md)** | 真站**原始引擎 + 全部真实资产**的本地镜像（SHA-256 逐字节核对），不重写引擎 | 需要**真显卡**（硬件 WebGL） | **逐字节一致 = 一模一样** |
-| **根目录 `index.html`** | 从零手写的近似演示（能量核心过场 + 玻璃板场景 + 虚拟滚动） | 任何环境，含无 GPU 的机器 | 视觉/交互接近，非逐帧 |
+> 从 `activetheory.net` 的逆向研究演变而来，原创动效实现，仅用于个人学习展示。`real-mirror/` 保留了一份逐字节研究镜像（见文末附录）。
 
-> ⚠️ 仅用于个人学习与技术研究，非官方项目，请勿用于商业用途。原始设计、引擎、字体、shader、贴图与内容版权归 Active Theory 所有。
+## 本地运行
 
-**为什么分两条**:真站的粒子系统依赖 GPU 浮点渲染目标，在没有硬件显卡的环境（如本沙箱的 SwiftShader 软件渲染）会直接崩溃、卡在加载页——真站本身在那种环境也打不开。所以「一模一样」只有在**有真显卡的机器**上跑原始镜像才能实现;根目录的手写版是给无 GPU 环境的降级演示。
+```bash
+python -m http.server 8080
+# 打开 http://localhost:8080
+```
 
-## 为什么重做
-
-第一版误做成「有滚动条 + 顶栏 + 左对齐大标题 + 卡片网格」的普通网页。通过 CDP 拦截贴图让真实 Hydra 引擎渲染出画面后发现，真站是：
-
-- **没有原生滚动条**（`scrollHeight === innerHeight`），下滑是 wheel/touch 驱动的虚拟场景推进
-- **进入是能量核心充能过场**（斜线圆盘 + 蓝色电弧触须 + 百分比 → 亮蓝 bloom 点亮）
-- **主页是极暗空间里的悬浮磨砂蓝玻璃板 + 交叉轨道光环**，右上是随滚动速度形变的药丸导航
-- 下滑是相机推进、全幅项目图占据整屏、场景间平滑过渡
-
-详见 **[REVERSE_ENGINEERING.md](./REVERSE_ENGINEERING.md)**（第 4.5 节真实画面取证 + 第 5 节动效参数 + 第 6 节取舍）。
+纯静态、零依赖、零构建。支持 `prefers-reduced-motion`；无 WebGL 时回退静态渐变。
 
 ## 交互
 
 | 操作 | 行为 |
 |---|---|
 | 等待 ~2.6s | 能量核心充能 → 亮蓝 bloom → 点亮玻璃板首页 |
-| 滚轮 / 上滑触摸 / ↑↓ / PgUp·PgDn / 空格 | 推进/回退虚拟场景（Home → 4 作品 → About → Contact）|
+| 滚轮 / 上滑触摸 / ↑↓ / PgUp·PgDn / 空格 | 推进/回退虚拟场景（Home → 6 作品 → About → Contact，共 9 屏）|
 | 右上药丸 ▶/❚❚ | 暂停/恢复全部动效 |
-| 右上药丸 ☰ | 打开全屏 AT 菜单，点 Work/About/Contact 跳到对应场景 |
+| 右上药丸 ☰ | 打开全屏 41n 菜单，点 Work/About/Contact 跳转场景 |
 | 左上 Toggle Audio | 音频开关（占位 UI）|
 | 移动鼠标 | 粒子场视差 + 上下边缘拉出彩色能量管 + 磁吸光标 |
 
-## 本地运行
+## ✏️ 替换成你自己的内容（只需改 2 个文件）
 
-**想要一模一样(推荐,需真显卡)——双击启动即可:**
-- Windows: 双击 `real-mirror/start.bat`
-- macOS / Linux: `cd real-mirror && ./start.sh`
+**1. `assets/js/data.js`** — 站点文案，全部集中在这里：
 
-脚本会自动下载资产(仅首次)、先打开 `check-gpu.html` 自检、再启动服务。**先跑自检页**确认显卡能力。
+- `meta.title` / `meta.description`：浏览器标题和描述
+- `home.kicker` / `home.tagline`：首页顶部小字与底部标语
+- `about.headline`：三行大标题，中间那行（`<em>`）会高亮成品牌色
+- `about.lede`：关于正文
+- `about.stats`：数据，格式 `["显示值", "标签"]`，可增删
+- `about.capabilities`：能力三组（当前未在场景展示，预留扩展）
+- `contact.headline`：三行联系大标题，最后一行是可点击邮箱链接
+- `contact.email` / `contact.links` / `contact.note`：邮箱、社交链接、备注
 
-或手动:
-```bash
-cd real-mirror
-python tools/build.py     # 首次下载 ~180MB 真实资产(幂等,可中断续跑)
-python tools/serve.py     # 打开 http://127.0.0.1:8080/check-gpu.html 自检
+**2. `assets/data/projects.json`** — 作品列表，一个作品一个对象：
+
+```json
+{
+  "slug": "aurora-lab",          // 英文短名，唯一标识
+  "name": "Aurora Lab",          // 作品名（大标题）
+  "client": "Self-initiated",    // 客户 / 归属
+  "description": "一句话介绍",   // 描述
+  "date": "2025",                // 年份
+  "tags": "WebGL,Generative",    // 逗号分隔的标签
+  "uiColor": "3aa0ff",           // 主题色（无图时决定占位框的描边/辉光色）
+  "priority": 1,                 // 排序（越小越前）
+  "image": null                  // 有图就填相对路径如 "assets/img/xxx.jpg"
+}
 ```
-`build.py` 会抓取原始 `app.js`、场景数据、几何、贴图(含 `.ktx2`)、Basis/Draco 解码器、worker、CMS 与 BMFont 字体数据,镜像 worker 路径(硬链接,0 额外空间),并生成带最小兼容 shim 的 `index.html`。引擎本身**零改动**。
 
-**只要能跑的演示(无 GPU 也能看):**
-```bash
-python -m http.server 8080   # 根目录,打开 http://localhost:8080
-```
+**换成你自己的作品图**：把图片放进 `assets/img/`，把对应作品的 `"image": null` 改成 `"image": "assets/img/你的图.jpg"`。有图的作品显示全幅照片，无图的显示几何占位框——两种可以混排。建议图片比例 16:9 或更宽、分辨率 ≥ 1600px。
 
-### Hydra 是开源的吗?
+场景数量、HUD 页码（如 `01 / 09`）、药丸进度都会随作品数量**自动更新**，不用手改。
 
-**不是。** Active Theory 的 Hydra 是内部自研的专有引擎(见其 Medium 文章《The Story of Technology Built at Active Theory》),官方 GitHub 组织只开源了小工具(`split-text`、`fit-text`、`activeframe`、`GaussianSplats3D`…),**没有 Hydra**。网上其他叫 "Hydra" 的开源项目(`hydra-synth` VJ 工具、`facebookresearch/hydra` 配置框架、`HydraJS`)都与它无关。所以「直接用 Hydra」= 用它**编译后的生产 bundle**,这正是 `real-mirror/` 逐字节做的事——你无法 `npm install` 或拿到它的源码。
+改完刷新浏览器即可，无需构建。
 
 ## 结构
 
 ```
-real-mirror/               逐字节镜像(需真显卡)
-  start.bat / start.sh     一键启动(建库 + 自检 + 服务)
-  check-gpu.html           显卡兼容性自检(WebGL2/浮点/软渲染判定)
-  tools/build.py           一键重建脚本(下载真实资产 + worker 硬链接 + 注入 shim)
-  tools/serve.py           带 KTX2/wasm MIME 的本地服务器
-  index.src.html           原站未改动的引导 HTML
-  README.md                镜像说明与 GPU 限制
-  site/                    构建产物(gitignore,~181MB,本地生成;含 worker 硬链接副本)
-index.html                 根目录手写演示入口(无 GPU 可用)
-assets/css/style.css       锁定视口、场景层、药丸、菜单、响应式、无障碍
-assets/css/style.css       锁定视口、场景层、药丸、菜单、响应式、无障碍
+index.html                 单屏骨架（两个 canvas + 药丸 + 场景层 + 菜单 + 41n 字标）
+assets/css/style.css       锁定视口、场景层、几何占位框、药丸、菜单、响应式、无障碍
 assets/js/portal.js        2D 能量核心过场 + 边缘能量管
 assets/js/shaderfield.js   WebGL 舞台（玻璃板 + 轨道环 + fbm 粒子，uProgress 推相机）
-assets/js/app.js           虚拟场景引擎（wheel→progress、交叉淡化、调色板插值、药丸速度反应）
-assets/js/data.js          About / 能力 / 联系方式文案
-assets/data/projects.json  65 个真实项目数据
+assets/js/app.js           虚拟场景引擎（wheel→progress、交叉淡化、调色板插值、占位框）
+assets/js/data.js          ★ 站点文案（改这里）
+assets/data/projects.json  ★ 作品列表（改这里）
 assets/fonts/              NBArchitekt Regular / Light / Bold
-assets/img/                项目图 + favicon + OG 图
+assets/img/                作品图（当前已清空 Active Theory 原图，可直接放你的图）
 REVERSE_ENGINEERING.md     逆向与取证报告
+real-mirror/               附录：逐字节研究镜像（见下）
 ```
 
 ## 动效参数（来自逆向，非手调）
@@ -91,4 +84,18 @@ REVERSE_ENGINEERING.md     逆向与取证报告
 - 调色板：青 `#00ffff` / 蓝 `#1A6DEA` / 冷辉光 `#9ca5ff` on near-black
 - curl noise 粒子 + 域扭曲 fbm（零贴图，降分辨率渲染）
 
-尊重 `prefers-reduced-motion`；无 WebGL 时回退静态渐变。
+---
+
+## 附录：逐字节研究镜像 `real-mirror/`
+
+保留了一份 Active Theory 原站**原始引擎 + 全部真实资产**的本地镜像（SHA-256 逐字节核对，`app.js` = `085d3e6a…`），供技术研究。**需要真显卡**（硬件 WebGL）；无 GPU 的软件渲染会卡在加载页（原站同样）。这不是作品集的一部分，端口与本站点独立。
+
+```bash
+cd real-mirror && ./start.sh      # macOS/Linux
+cd real-mirror && start.bat       # Windows
+# 或：python tools/build.py && python tools/serve.py
+```
+
+先打开 `http://127.0.0.1:8080/check-gpu.html` 自检显卡。详见 [`real-mirror/README.md`](./real-mirror/README.md)。
+
+**Hydra 开源吗？不。** Active Theory 的 Hydra 是内部自研专有引擎，官方 GitHub 只开源了小工具，网上同名开源项目（`hydra-synth`、`facebookresearch/hydra`、`HydraJS`）都无关。`real-mirror/` 用的是它编译后的生产 bundle，无法 `npm install` 或拿到源码。完整查证见 `REVERSE_ENGINEERING.md` 第 8 节。

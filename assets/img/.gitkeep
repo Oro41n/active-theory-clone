@@ -1,0 +1,1 @@
+# 把你的作品图放进这个目录，然后在 assets/data/projects.json 里把对应作品的 "image": null 改为 "image": "assets/img/你的图.jpg"

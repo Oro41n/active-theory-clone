@@ -1,4 +1,4 @@
-/* Active Theory study rebuild — intro energy-core + edge energy tubes.
+/* 41n portfolio — intro energy-core + edge energy tubes.
    Reconstructed from captured frames of the real load sequence:
      a hatched disc grows from a dome to a full circle, eight cyan electric
      tendrils unfurl outward with a slow curl, two symmetric outer arcs and a
