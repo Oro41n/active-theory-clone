@@ -4,3 +4,9 @@
 .DS_Store
 Thumbs.db
 node_modules/
+
+# Real mirror: 180 MB of third-party assets, rebuilt locally by tools/build.py
+real-mirror/site/
+# throwaway previews
+_pv_*.png _t_*.png _u_*.png _v_*.png _x_*.png _y_*.png _z_*.png _m_*.png _mr_*.png _mf_*.png _fin_*.png
+_*.js

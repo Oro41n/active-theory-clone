@@ -1,8 +1,15 @@
 # Active Theory — Study Rebuild
 
-对 [activetheory.net](https://activetheory.net) 做逆向分析后的**个人学习用**前端复刻。第二版基于**真实渲染逐帧取证**推翻了第一版错误的结构，重建为「锁定单屏 + 虚拟场景推进」引擎。
+对 [activetheory.net](https://activetheory.net) 做逆向分析后的**个人学习用**复刻。仓库里有**两条路径**，按需选:
 
-> ⚠️ 仅用于个人学习与技术研究，非官方项目，请勿用于商业用途。原始设计、字体、shader、影片与内容版权归 Active Theory 所有。
+| 路径 | 是什么 | 运行条件 | 相似度 |
+|---|---|---|---|
+| **[`real-mirror/`](./real-mirror/README.md)** | 真站**原始引擎 + 全部真实资产**的本地镜像（SHA-256 逐字节核对），不重写引擎 | 需要**真显卡**（硬件 WebGL） | **逐字节一致 = 一模一样** |
+| **根目录 `index.html`** | 从零手写的近似演示（能量核心过场 + 玻璃板场景 + 虚拟滚动） | 任何环境，含无 GPU 的机器 | 视觉/交互接近，非逐帧 |
+
+> ⚠️ 仅用于个人学习与技术研究，非官方项目，请勿用于商业用途。原始设计、引擎、字体、shader、贴图与内容版权归 Active Theory 所有。
+
+**为什么分两条**:真站的粒子系统依赖 GPU 浮点渲染目标，在没有硬件显卡的环境（如本沙箱的 SwiftShader 软件渲染）会直接崩溃、卡在加载页——真站本身在那种环境也打不开。所以「一模一样」只有在**有真显卡的机器**上跑原始镜像才能实现;根目录的手写版是给无 GPU 环境的降级演示。
 
 ## 为什么重做
 
@@ -28,12 +35,29 @@
 
 ## 本地运行
 
+**想要一模一样(推荐,需真显卡):**
 ```bash
-python -m http.server 8080
-# 打开 http://localhost:8080
+cd real-mirror
+python tools/build.py     # 首次下载 ~180MB 真实资产(幂等,可中断续跑)
+python tools/serve.py     # 打开 http://127.0.0.1:8080
+```
+`build.py` 会抓取原始 `app.js`、场景数据、几何、贴图(含 `.ktx2`)、Basis/Draco 解码器、worker 与 CMS,并生成带最小兼容 shim 的 `index.html`。引擎本身**零改动**。
+
+**只要能跑的演示(无 GPU 也能看):**
+```bash
+python -m http.server 8080   # 根目录,打开 http://localhost:8080
 ```
 
 ## 结构
+
+```
+real-mirror/               逐字节镜像(需真显卡)
+  tools/build.py           一键重建脚本(下载真实资产 + 注入 shim)
+  tools/serve.py           带 KTX2/wasm MIME 的本地服务器
+  index.src.html           原站未改动的引导 HTML
+  README.md                镜像说明与 GPU 限制
+  site/                    构建产物(gitignore,~180MB,本地生成)
+index.html                 根目录手写演示入口(无 GPU 可用)
 
 ```
 index.html                 单屏骨架（两个 canvas + 药丸 + 场景层 + 菜单）

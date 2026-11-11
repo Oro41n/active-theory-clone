@@ -36,30 +36,47 @@
     intro = { start: performance.now(), onDone: onDone, flashed: false, ended: false };
   }
 
-  function hatchDisc(cx, cy, R, fill) {
-    // circular clip, hatch fills from the top down (dome -> full circle)
+  // Deterministic pseudo-random slash field (stable per frame so glyphs don't flicker)
+  var _slashSeeds = null;
+  function slashSeeds() {
+    if (_slashSeeds) return _slashSeeds;
+    var arr = [], n = 460, seed = 1337;
+    function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    for (var i = 0; i < n; i++) arr.push({ a: rnd() * Math.PI * 2, r: Math.sqrt(rnd()), len: 4 + rnd() * 5, ph: rnd() * 6.283 });
+    _slashSeeds = arr; return arr;
+  }
+
+  // Reproduces the real loader: scattered short slash glyphs condense into a
+  // dome (upper semicircle) early, then fill into a full disc at high progress.
+  function hatchDome(cx, cy, R, p) {
+    var seeds = slashSeeds();
+    // early: a loose dome (upper half); late: full disc
+    var full = Math.max(0, Math.min(1, (p - 0.35) / 0.4));
+    var gather = Math.min(1, p * 2.2); // glyphs scatter wide, then gather
+    var active = Math.floor(seeds.length * Math.min(1, 0.15 + p * 0.95));
     ctx.save();
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.clip();
-    const top = cy - R, bottom = cy + R;
-    const level = top + fill * (2 * R);
-    ctx.strokeStyle = "rgba(120,170,235,0.55)";
-    ctx.lineWidth = 1;
-    const gap = 6, span = Math.ceil(R * 2.4);
-    for (let x = -span; x <= span; x += gap) {
-      ctx.beginPath();
-      ctx.moveTo(cx + x, top - 2);
-      ctx.lineTo(cx + x - (bottom - top), top - 2 + (bottom - top));
-      ctx.stroke();
+    ctx.font = "300 11px nbarchitekt, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (var i = 0; i < active; i++) {
+      var s = seeds[i];
+      // map seed to upper dome angle (-PI..0) plus full-disc coverage late
+      var ang = -Math.PI + s.a * Math.PI;                 // upper semicircle
+      if (full > 0 && s.a > 0.5) ang = s.a * Math.PI * 2; // lower half appears late
+      var rr = R * (0.18 + s.r * 0.82) * (0.6 + gather * 0.4);
+      var x = cx + Math.cos(ang) * rr;
+      var y = cy + Math.sin(ang) * rr * (full > 0 ? 1 : 0.9);
+      var flick = 0.35 + 0.65 * Math.abs(Math.sin(p * 22 + s.ph));
+      ctx.fillStyle = "rgba(120,175,235," + (0.18 + flick * 0.42) + ")";
+      ctx.fillText("/", x, y);
     }
-    // mask out everything below the fill level
-    ctx.globalCompositeOperation = "destination-out";
-    ctx.fillStyle = "#000";
-    ctx.fillRect(cx - R - 2, level, 2 * R + 4, 2 * R + 4);
+    // faint rim arc for the dome / disc
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, Math.PI, Math.PI * 2);
+    ctx.strokeStyle = "rgba(150,200,255," + (0.16 + full * 0.22) + ")";
+    ctx.lineWidth = 1; ctx.stroke();
+    if (full > 0) { ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI);
+      ctx.strokeStyle = "rgba(150,200,255," + (full * 0.30) + ")"; ctx.stroke(); }
     ctx.restore();
-    // faint disc rim
-    ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(150,200,255,0.42)"; ctx.lineWidth = 1;
-    ctx.shadowColor = "rgba(60,150,255,0.6)"; ctx.shadowBlur = 10; ctx.stroke(); ctx.shadowBlur = 0;
   }
 
   function tendril(cx, cy, ang, R, len, curl, alpha, phase) {
@@ -110,30 +127,33 @@
     ctx.clearRect(0, 0, W, H);
 
     if (p < 1) {
-      const fill = Math.min(1, e * 1.3);
-      hatchDisc(cx, cy, R, fill);
-      // twelve curling electric tendrils unfurl as charge rises (real core is dense & organic)
-      const len = R * (0.4 + e * 1.35);
-      for (let i = 0; i < 12; i++) {
-        const ang = (Math.PI * 2 / 12) * i + Math.PI / 12 + Math.sin(phase * 0.5 + i) * 0.05;
-        const curl = Math.sin(phase * 0.65 + i * 1.1) * (18 + e * 22) + Math.cos(i * 2.1) * 10;
-        tendril(cx, cy, ang, R, len, curl, 0.20 + e * 0.66, phase + i);
-      }
-      // symmetric outer arcs
-      sideArc(cx, cy, -1, R * 2.7, R, 0.10 + e * 0.30, phase);
-      sideArc(cx, cy, 1, R * 2.7, R, 0.10 + e * 0.30, phase + 1.4);
-      sideArc(cx, cy, -1, R * 3.5, R, 0.06 + e * 0.20, phase + 0.7);
-      sideArc(cx, cy, 1, R * 3.5, R, 0.06 + e * 0.20, phase + 2.1);
-      // energy nodes left / right
-      const na = 0.25 + e * 0.6;
-      energyNode(cx - R * 2.05, cy, 3.2, na, phase * 2);
-      energyNode(cx + R * 2.05, cy, 3.2, na, phase * 2 + 1);
-      // percentage
+      // early phase: just the tiny "//N" count at dead center (matches real frame //3)
       const pct = Math.round(e * 100);
-      ctx.fillStyle = "rgba(220,238,255,0.92)";
+      const countText = "//" + pct;
+      hatchDome(cx, cy, R, e);
+
+      // at higher charge, the full energy core blooms: radial electric tendrils
+      const bloom = Math.max(0, Math.min(1, (e - 0.35) / 0.5));
+      if (bloom > 0) {
+        const len = R * (0.4 + bloom * 1.35);
+        for (let i = 0; i < 14; i++) {
+          const ang = (Math.PI * 2 / 14) * i + Math.PI / 14 + Math.sin(phase * 0.5 + i) * 0.04;
+          const curl = Math.sin(phase * 0.65 + i * 1.1) * (18 + bloom * 22) + Math.cos(i * 2.1) * 10;
+          tendril(cx, cy, ang, R, len, curl, bloom * (0.20 + 0.66), phase + i);
+        }
+        sideArc(cx, cy, -1, R * 2.7, R, bloom * 0.34, phase);
+        sideArc(cx, cy, 1, R * 2.7, R, bloom * 0.34, phase + 1.4);
+        sideArc(cx, cy, -1, R * 3.5, R, bloom * 0.22, phase + 0.7);
+        sideArc(cx, cy, 1, R * 3.5, R, bloom * 0.22, phase + 2.1);
+        const na = bloom * 0.8;
+        energyNode(cx - R * 2.05, cy, 3.2, na, phase * 2);
+        energyNode(cx + R * 2.05, cy, 3.2, na, phase * 2 + 1);
+      }
+      // the count sits inside the dome/core, cyan-white
+      ctx.fillStyle = "rgba(150,215,255,0.95)";
       ctx.font = "300 12px nbarchitekt, monospace";
       ctx.textAlign = "center"; ctx.textBaseline = "middle";
-      ctx.fillText("/" + pct, cx, cy);
+      ctx.fillText(countText, cx, cy + (e > 0.4 ? 0 : R * 0.1));
       return;
     }
 
