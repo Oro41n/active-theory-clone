@@ -1,10 +1,10 @@
 @echo off
 chcp 65001 >nul
-title Active Theory Mirror
+title 41n Design Collection
 cd /d "%~dp0"
 
 echo ============================================================
-echo   Active Theory - byte-exact local mirror (personal study)
+echo   41n Design Collection - personal study
 echo ============================================================
 echo.
 
@@ -16,8 +16,8 @@ if errorlevel 1 (
 )
 
 if not exist "site\index.html" (
-  echo [1/2] First run - downloading ~180 MB of real assets...
-  echo       (only once; subsequent runs skip existing files)
+  echo [1/2] First run - downloading ~180 MB of original assets...
+  echo       (only once; build.py also applies the 41n content layer)
   python tools\build.py
   if errorlevel 1 ( echo [ERROR] build failed & pause & exit /b 1 )
 ) else (

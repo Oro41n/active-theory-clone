@@ -3,7 +3,7 @@ set -e
 cd "$(dirname "$0")"
 
 echo "============================================================"
-echo "  Active Theory - byte-exact local mirror (personal study)"
+echo "  41n Design Collection - personal study"
 echo "============================================================"
 echo
 
