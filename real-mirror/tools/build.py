@@ -139,9 +139,17 @@ def main():
         if os.path.exists(src):
             shutil.copy2(src, os.path.join(SITE, extra))
 
+    print('[6/6] apply the 41n content layer (edit tools/apply-41n.py to customise)')
+    content = os.path.join(HERE, 'apply-41n.py')
+    if os.path.exists(content):
+        import subprocess as _sp
+        _sp.run([sys.executable, content], check=False)
+    else:
+        print('       (apply-41n.py missing — mirror keeps original content)')
+
     total = sum(os.path.getsize(os.path.join(dp, f)) for dp, _, fs in os.walk(SITE) for f in fs)
-    print(f'[6/6] done. {total/1024/1024:.1f} MB in {SITE}')
-    print('      run:  python tools/serve.py   then open http://127.0.0.1:8080')
+    print(f'       done. {total/1024/1024:.1f} MB in {SITE}')
+    print('       run:  python tools/serve.py   then open http://127.0.0.1:8080')
 
 
 def ensure_worker_paths():

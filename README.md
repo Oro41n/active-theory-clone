@@ -88,9 +88,13 @@ real-mirror/               附录：逐字节研究镜像（见下）
 
 ---
 
-## 附录：逐字节研究镜像 `real-mirror/`
+## 附录：逐字节研究镜像 `real-mirror/`（已灌入 41n 设计集内容）
 
-保留了一份 Active Theory 原站**原始引擎 + 全部真实资产**的本地镜像（SHA-256 逐字节核对，`app.js` = `085d3e6a…`），供技术研究。**需要真显卡**（硬件 WebGL）；无 GPU 的软件渲染会卡在加载页（原站同样）。这不是作品集的一部分，端口与本站点独立。
+保留了 Active Theory 原站**原始引擎 + 全部真实资产**的本地镜像（SHA-256 逐字节核对，`app.js` = `085d3e6a…`）。**这套壳现在默认显示 41n 设计集的内容**：65 个作品、场景 3D 大字、全部缩略图/视频、meta 与联系方式都换成了 41n，而引擎、模型、贴图、shader、场景图、转场、粒子、玻璃面板、药丸导航、详情页框架与全部动效**一个字节没动**。
+
+内容层是纯数据替换，映射表和改法见 [`real-mirror/CONTENT.md`](./real-mirror/CONTENT.md)。`build.py` 会自动应用，`apply-41n.py --restore` 可切回原站内容。
+
+**需要真显卡**（硬件 WebGL）；无 GPU 的软件渲染会卡在加载过场（原站同样）。
 
 ```bash
 cd real-mirror && ./start.sh      # macOS/Linux

@@ -1,10 +1,16 @@
-# Real mirror (byte-exact engine + assets)
+# Real mirror (byte-exact engine + assets) — 41n Design Collection
 
 This folder rebuilds **activetheory.net itself**, for personal study — not a hand-written imitation.
 The original Hydra bundle, scene data, geometry (`.bin`/`.json`), textures (+ `.ktx2`), decoders
 (Basis/Draco), worker and CMS JSON are fetched from the live origin. The engine bundle is **never
 modified**; SHA-256 of `app.1780406240914.js` matches the live site exactly
 (`085d3e6a46893f503262ccdaaad16f832367e709bae7ae14c369b629fdb1a5cf`).
+
+**The site now boots as the `41n Design Collection`**: all 65 works, every scene headline,
+all thumbnails/videos and all metadata are 41n content, applied as a pure data layer by
+`tools/apply-41n.py`. The engine, 3D models, shaders, scene graph, transitions and every effect
+are untouched. See **[CONTENT.md](./CONTENT.md)** for the full replacement map and how to edit it.
+`build.py` applies this layer automatically; `--restore` brings the original copy back.
 
 ## Quick start
 
@@ -18,8 +24,15 @@ hardware, then starts the server at `http://127.0.0.1:8080`.
 **Or run manually:**
 
 ```bash
-python tools/build.py        # downloads ~180 MB once; builds site/ (idempotent)
+python tools/build.py        # downloads ~180 MB once, then applies the 41n content layer
 python tools/serve.py        # http://127.0.0.1:8080  — open check-gpu.html first
+```
+
+Content commands (see [CONTENT.md](./CONTENT.md)):
+```bash
+python tools/apply-41n.py            # re-apply the 41n content layer (idempotent)
+python tools/apply-41n.py --report   # print the content mapping table
+python tools/apply-41n.py --restore  # switch back to the original site content
 ```
 
 Open **`http://127.0.0.1:8080/check-gpu.html`** first: it reports WebGL2, hardware vs software
