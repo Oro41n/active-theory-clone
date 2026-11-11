@@ -8,7 +8,7 @@
     "tags": "WebGL,Generative,Creative Coding",
     "uiColor": "3aa0ff",
     "priority": 1,
-    "image": null
+    "image": "assets/img/aurora-lab.jpg"
   },
   {
     "slug": "monolith",
@@ -19,7 +19,7 @@
     "tags": "3D,Brand,Interaction",
     "uiColor": "8a8bcf",
     "priority": 2,
-    "image": null
+    "image": "assets/img/monolith.jpg"
   },
   {
     "slug": "drift",
@@ -30,7 +30,7 @@
     "tags": "Installation,Motion",
     "uiColor": "e08a5a",
     "priority": 3,
-    "image": null
+    "image": "assets/img/drift.jpg"
   },
   {
     "slug": "signal-noise",
@@ -41,7 +41,7 @@
     "tags": "Audio,Generative",
     "uiColor": "5ad0c0",
     "priority": 4,
-    "image": null
+    "image": "assets/img/signal-noise.jpg"
   },
   {
     "slug": "terrain",
@@ -52,7 +52,7 @@
     "tags": "Data Visualization,Web",
     "uiColor": "7a9e6e",
     "priority": 5,
-    "image": null
+    "image": "assets/img/terrain.jpg"
   },
   {
     "slug": "echo-chamber",
@@ -63,6 +63,6 @@
     "tags": "AI,Interaction",
     "uiColor": "c96a8a",
     "priority": 6,
-    "image": null
+    "image": "assets/img/echo-chamber.jpg"
   }
 ]

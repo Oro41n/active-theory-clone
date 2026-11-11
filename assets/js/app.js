@@ -152,7 +152,11 @@
       if (ph) ph.style.transform = "scale(" + (1.08 + d * 0.04).toFixed(3) + ")";
       var info = el.querySelector(".scene__info");
       if (info) {
-        var io = Math.max(0, 1 - Math.abs(d) * 2.3);
+        // Hold the title at full opacity while it's the focused scene, then
+        // fade fast only during the actual handoff, so a wheel stop near the
+        // midpoint never leaves the title ghosted at ~0.2 opacity.
+        var ad = Math.abs(d);
+        var io = ad <= 0.34 ? 1 : Math.max(0, 1 - (ad - 0.34) / 0.46);
         io = io * io * (3 - 2 * io);
         info.style.opacity = io.toFixed(3);
         info.style.transform = "translate3d(0," + (d * -5).toFixed(1) + "%,0)";
